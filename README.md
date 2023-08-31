@@ -1,4 +1,4 @@
-Geographic Coordinate Density Analysis within a given range
+#Geographic Coordinate Density Analysis within a given range#
 
 **Description:**
 This Python script performs geographic coordinate analysis using a dataset of latitude, longitude, and speed values [ In our datasets, we have vehcile speed at that co-ordinate. You can remove or tweak according to your datasets]. It calculates the haversine distance between pairs of coordinates, identifies clusters of nearby points, and provides insights into their distribution and average speeds.
