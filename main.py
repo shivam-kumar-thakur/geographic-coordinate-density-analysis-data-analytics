@@ -1,7 +1,3 @@
-import pandas as pd
-import math
-
-
 # Function to calculate the haversine distance between two coordinates
 def haversine_distance(lat1, lon1, lat2, lon2):
     R = 6371.0  # Radius of the Earth in kilometers
@@ -55,17 +51,18 @@ def specific_points(co_ordinates_count, reverse_value, sort_on_basis, circle_rad
     sorted_co_ordinates = sorted(co_ordinates_count, key=lambda x: x[sort_on_basis], reverse=reverse_value)
     final_specific_points = [sorted_co_ordinates[0]]  # Store the first element
 
-    store_data = sorted_co_ordinates[0]
     for i in range(1, len(sorted_co_ordinates)):
-        lat1, lon1 = store_data[0]
         store_data2 = sorted_co_ordinates[i]
         lat2, lon2 = store_data2[0]
 
-        # Check if the distance between two points is greater than circle_radius_in_km
-        if haversine_distance(lat1, lon1, lat2, lon2) > circle_radius_in_km:
+        # Check if the distance between two points is greater than circle_radius_in_km for all know points
+        flag=True
+        for j in final_specific_points:
+            lat1, lon1 = j[0]
+            if (haversine_distance(lat1, lon1, lat2, lon2) < circle_radius_in_km):
+                flag=False
+        if flag:
             final_specific_points.append(sorted_co_ordinates[i])
-            store_data = sorted_co_ordinates[i]
-
     return final_specific_points
 
 
@@ -83,32 +80,37 @@ def coordinate_dataframe(specific_points_coordinaes):
 
 
 if __name__ == "__main__":
-    # Read the CSV file into a DataFrame
-    df = pd.read_csv(r"G:\intel\unnati_phase1_data\data seperated on collisions\cas_fcw.csv")
+    warn = ["data seperated on collisions\cas_fcw.csv", "data seperated on collisions\cas_hmw.csv",
+            "data seperated on collisions\cas_ldw.csv", "data seperated on collisions\cas_pcw.csv"]
+    for i in warn:
+        # Read the CSV file into a DataFrame
+        print("Currently working on : ", i)
+        df = pd.read_csv(i, dtype={'Lat': float, 'Long': float})
+        # Find unique coordinates and calculate average speed
+        unique = df[['Lat', 'Long']].drop_duplicates()
+        arr_to_store_unique_coord_with_avgspeed = []
 
-    # Find unique coordinates and calculate average speed
-    unique = df[['Lat', 'Long']].drop_duplicates()
-    arr_to_store_unique_coord_with_avgspeed = []
+        for index, row in unique.iterrows():
+            lat = row['Lat'].round(8)
+            long = row['Long'].round(8)
 
-    for index, row in unique.iterrows():
-        lat = row['Lat']
-        long = row['Long']
+            matching_rows = df[(df['Lat'] == lat) & (df['Long'] == long)]
+            avg_speed = matching_rows['Speed'].mean()
+            arr_to_store_unique_coord_with_avgspeed.append([lat, long, avg_speed])
 
-        matching_rows = df[(df['Lat'] == lat) & (df['Long'] == long)]
-        avg_speed = matching_rows['Speed'].mean()
-        arr_to_store_unique_coord_with_avgspeed.append([lat, long, avg_speed])
+        # Calculate specific coordinates within a certain distance and their statistics
+        co_ordinates_count = specific_co_ordintes(arr_to_store_unique_coord_with_avgspeed, 0.500)
 
-    # Calculate specific coordinates within a certain distance and their statistics
-    co_ordinates_count = specific_co_ordintes(arr_to_store_unique_coord_with_avgspeed, 0.500)
+        # Select specific points based on criteria
+        specific_points_coordinaes = specific_points(co_ordinates_count, True, 1, 0.500)
 
-    # Select specific points based on criteria
-    specific_points_coordinaes = specific_points(co_ordinates_count, True, 1, 0.500)
+        # Convert selected points to a DataFrame
+        final_data = coordinate_dataframe(specific_points_coordinaes)
+        
+        # Export data to a CSV file
+        exp_name = i[(i.find("/") + 1):]
+        final_data.to_csv(exp_name, index=False)
+        print("Csv file has been generated for this  : ", i)
 
-    # Convert selected points to a DataFrame
-    final_data = coordinate_dataframe(specific_points_coordinaes)
-
-    # Export data to a CSV file
-    final_data.to_csv("tryit.csv", index=False)
-    print(final_data)
 
 
